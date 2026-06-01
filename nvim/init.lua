@@ -93,6 +93,9 @@ do
   --  See `:help hlsearch`
   vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
 
+  vim.keymap.set('n', '<C-d>', '<C-d>zz')
+  vim.keymap.set('n', '<C-u>', '<C-u>zz')
+
   -- Diagnostic Config & Keymaps
   --  See `:help vim.diagnostic.Opts`
   vim.diagnostic.config {
@@ -248,6 +251,12 @@ do
   -- and then call its `setup()` function to start it with default settings.
   vim.pack.add { gh 'NMAC427/guess-indent.nvim' }
   require('guess-indent').setup {}
+
+  -- oil for easy file system changes
+  vim.pack.add { gh 'stevearc/oil.nvim' }
+  require('oil').setup({
+    delete_to_trash = true
+  })
 
   -- Because lua is a real programming language, you can also have some logic to your installation -
   -- like only installing a plugin if a condition is met.
@@ -613,7 +622,6 @@ do
     --
     -- But for many setups, the LSP (`ts_ls`) will work just fine
     ts_ls = {
-      cmd = { 'typescript-language-server', 'stdio' },
       filetypes = { 'javascript', 'javascriptreact', 'typescript', 'typescriptreact' }
     },
     astro = {
