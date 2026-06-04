@@ -255,8 +255,16 @@ do
   -- oil for easy file system changes
   vim.pack.add { gh 'stevearc/oil.nvim' }
   require('oil').setup({
-    delete_to_trash = true
+    delete_to_trash = true,
+    view_options = {
+      show_hidden = true
+    }
   })
+
+  vim.keymap.set('n', '-', '<cmd>Oil<CR>')
+
+  vim.pack.add { gh 'nvim-lua/plenary.nvim' }
+  vim.pack.add({{ src = gh 'ThePrimeagen/harpoon', version = 'harpoon2' }})
 
   -- Because lua is a real programming language, you can also have some logic to your installation -
   -- like only installing a plugin if a condition is met.
@@ -429,6 +437,36 @@ do
   vim.keymap.set('n', '<leader>s.', builtin.oldfiles, { desc = '[S]earch Recent Files ("." for repeat)' })
   vim.keymap.set('n', '<leader>sc', builtin.commands, { desc = '[S]earch [C]ommands' })
   vim.keymap.set('n', '<leader><leader>', builtin.buffers, { desc = '[ ] Find existing buffers' })
+
+  local harpoon = require('harpoon')
+  harpoon.setup({})
+
+  local conf = require('telescope.config').values
+
+  local function toggle_telescope(harpoon_files)
+    local file_paths = {}
+    for _, item in ipairs(harpoon_files.items) do
+      table.insert(file_paths, item.value)
+    end
+
+    require('telescope.pickers').new({}, {
+      prompt_title = "Harpoon",
+      finder = require('telescope.finders').new_table({
+      results = file_paths,
+      }),
+      previewer = conf.file_previewer({}),
+      sorter = conf.generic_sorter({}),
+    }):find()
+  end
+
+  vim.keymap.set('n', '<leader>a', function() harpoon:list():add() end, { desc = '[a]dd buffer to harpoon' })
+  vim.keymap.set('n', '<C-e>', function() toggle_telescope(harpoon:list()) end, { desc = "Open harpoon window" })
+
+  vim.keymap.set('n', '<C-1>', function() harpoon:list():select(1) end)
+  vim.keymap.set('n', '<C-2>', function() harpoon:list():select(2) end)
+  vim.keymap.set('n', '<C-3>', function() harpoon:list():select(3) end)
+  vim.keymap.set('n', '<C-4>', function() harpoon:list():select(4) end)
+
 
   -- Add Telescope-based LSP pickers when an LSP attaches to a buffer.
   -- If you later switch picker plugins, this is where to update these mappings.
