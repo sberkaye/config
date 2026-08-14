@@ -61,6 +61,10 @@ do
   vim.o.splitright = true
   vim.o.splitbelow = true
 
+  -- Set tabsize
+  vim.o.tabstop = 2
+  vim.o.shiftwidth = 2
+
   -- Sets how neovim will display certain whitespace characters in the editor.
   --  See `:help 'list'`
   --  and `:help 'listchars'`
@@ -439,33 +443,51 @@ do
   vim.keymap.set('n', '<leader><leader>', builtin.buffers, { desc = '[ ] Find existing buffers' })
 
   local harpoon = require('harpoon')
-  harpoon.setup({})
+  harpoon:setup({})
 
   local conf = require('telescope.config').values
 
   local function toggle_telescope(harpoon_files)
-    local file_paths = {}
-    for _, item in ipairs(harpoon_files.items) do
-      table.insert(file_paths, item.value)
+    local finder = function()
+      local file_paths = {}
+      for _, item in ipairs(harpoon_files.items) do
+        table.insert(file_paths, item.value)
+      end
+
+      return require("telescope.finders").new_table({
+        results = file_paths
+      })
     end
 
     require('telescope.pickers').new({}, {
       prompt_title = "Harpoon",
-      finder = require('telescope.finders').new_table({
-      results = file_paths,
-      }),
+      finder = finder(),
       previewer = conf.file_previewer({}),
       sorter = conf.generic_sorter({}),
+      attach_mappings = function(prompt_bufnr, map)
+        map('i', '<C-d>', function()
+          local state = require("telescope.actions.state")
+          local selected_entry = state.get_selected_entry()
+          local current_picker = state.get_current_picker(prompt_bufnr)
+
+          table.remove(harpoon_files.items, selected_entry.index)
+          current_picker:refresh(finder())
+        end, { desc = '[D]elete added buffer' })
+        return true
+      end,
     }):find()
   end
 
-  vim.keymap.set('n', '<leader>a', function() harpoon:list():add() end, { desc = '[a]dd buffer to harpoon' })
+  vim.keymap.set('n', '<leader>a', function() harpoon:list():add() end, { desc = '[A]dd buffer to harpoon' })
   vim.keymap.set('n', '<C-e>', function() toggle_telescope(harpoon:list()) end, { desc = "Open harpoon window" })
 
   vim.keymap.set('n', '<C-1>', function() harpoon:list():select(1) end)
   vim.keymap.set('n', '<C-2>', function() harpoon:list():select(2) end)
   vim.keymap.set('n', '<C-3>', function() harpoon:list():select(3) end)
   vim.keymap.set('n', '<C-4>', function() harpoon:list():select(4) end)
+
+  vim.keymap.set('n', '<C-S-P>', function() harpoon:list():prev() end)
+  vim.keymap.set('n', '<C-S-N>', function() harpoon:list():next() end)
 
 
   -- Add Telescope-based LSP pickers when an LSP attaches to a buffer.
@@ -477,6 +499,8 @@ do
 
       -- Find references for the word under your cursor.
       vim.keymap.set('n', 'grr', builtin.lsp_references, { buffer = buf, desc = '[G]oto [R]eferences' })
+
+      -- vim.keymap.set('n', 'K', vim.lsp.buf.hover, { buffer = buf })
 
       -- Jump to the implementation of the word under your cursor.
       -- Useful when your language has ways of declaring types without an actual implementation.
@@ -671,6 +695,7 @@ do
     },
     cssls = {},
     eslint = {},
+    html = {},
     jsonls = {},
     mdx_analyzer = {},
     vue_ls = {},
@@ -827,6 +852,9 @@ do
       -- See `:help blink-cmp-config-keymap` for defining your own keymap
       preset = 'default',
 
+      ['<C-space>'] = { function(cmp) cmp.show({ providers = { 'lsp', 'path' } }) end },
+      ['<C-S-e>'] = { function(cmp) cmp.show_documentation() end },
+
       -- For more advanced Luasnip keymaps (e.g. selecting choice nodes, expansion) see:
       --    https://github.com/L3MON4D3/LuaSnip?tab=readme-ov-file#keymaps
     },
@@ -847,7 +875,7 @@ do
       default = { 'lsp', 'path', 'snippets' },
     },
 
-    snippets = { preset = 'luasnip' },
+    -- snippets = { preset = 'luasnip' },
 
     -- Blink.cmp includes an optional, recommended rust fuzzy matcher,
     -- which automatically downloads a prebuilt binary when enabled.
@@ -856,11 +884,12 @@ do
     -- the rust implementation via `'prefer_rust_with_warning'`
     --
     -- See `:help blink-cmp-config-fuzzy` for more information
-    fuzzy = { implementation = 'lua' },
+    fuzzy = { implementation = 'prefer_rust_with_warning' },
 
     -- Shows a signature help window while you type arguments for a function
     signature = { enabled = true },
   }
 end
 
-
+-- surround motions
+vim.pack.add { { src = gh 'kylechui/nvim-surround', version = vim.version.range '4.*' } }
